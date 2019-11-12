@@ -71,49 +71,33 @@ void SystemClock_Config(void);
   */
 int main(void)
 {
-  /* USER CODE BEGIN 1 */
+	/* MCU Configuration--------------------------------------------------------*/
 
-  /* USER CODE END 1 */
-  
+	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+	HAL_Init();
 
-  /* MCU Configuration--------------------------------------------------------*/
+	/* Configure the system clock */
+	SystemClock_Config();
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+	/* Initialize all configured peripherals */
+	MX_GPIO_Init();
+	MX_DMA_Init();
+	MX_ADC_Init();
+	MX_I2C1_Init();
+	MX_SPI1_Init();
+	MX_TIM1_Init();
+	MX_TIM3_Init();
+	MX_USART1_UART_Init();
+	MX_TIM15_Init();
 
-  /* USER CODE BEGIN Init */
+	/* Infinite loop */
+	/* USER CODE BEGIN WHILE */
+	while (1)
+	{
+	/* USER CODE END WHILE */
 
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
-  SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_DMA_Init();
-  MX_ADC_Init();
-  MX_I2C1_Init();
-  MX_SPI1_Init();
-  MX_TIM1_Init();
-  MX_TIM3_Init();
-  MX_USART1_UART_Init();
-  /* USER CODE BEGIN 2 */
-
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
-  }
-  /* USER CODE END 3 */
+	/* USER CODE BEGIN 3 */
+	}
 }
 
 /**
@@ -162,21 +146,18 @@ void SystemClock_Config(void)
 	}
 }
 
-/* USER CODE BEGIN 4 */
-
-/* USER CODE END 4 */
-
 /**
   * @brief  This function is executed in case of error occurrence.
   * @retval None
   */
 void Error_Handler(void)
 {
-	// Enter an infinite loop for debugging
+  /* User can add his own implementation to report the HAL error return state */
 	while(1)
 	{
 
 	}
+  /* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef  USE_FULL_ASSERT
