@@ -20,13 +20,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "adc.h"
-#include "dma.h"
-#include "i2c.h"
-#include "spi.h"
-#include "tim.h"
-#include "usart.h"
-#include "gpio.h"
+
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -71,6 +65,28 @@ void SystemClock_Config(void);
   */
 int main(void)
 {
+	// Initialize waveform variables to have a 60Hz waveform
+	waveform_frequency = 60;
+	waveform_maxSwitches = 844;
+	waveformU_switchCount = 0;
+	waveformV_switchCount = 0;
+	waveformW_switchCount = 0;
+
+	// Initialize all of the FET states to open
+	phaseU_low_state = switchOpen;
+	phaseW_low_state = switchOpen;
+	phaseV_low_state = switchOpen;
+
+	phaseU_high_state = switchOpen;
+	phaseW_high_state = switchOpen;
+	phaseV_high_state = switchOpen;
+
+	// FIXME Change this to start out with the waveforms disabled
+	// Initialize the waveform states
+	waveformU_state = waveform_running;
+	waveformV_state = waveform_running;
+	waveformW_state = waveform_running;
+
 	/* MCU Configuration--------------------------------------------------------*/
 
 	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
@@ -84,7 +100,6 @@ int main(void)
 	MX_DMA_Init();
 	MX_ADC_Init();
 	MX_I2C1_Init();
-	MX_SPI1_Init();
 	MX_TIM1_Init();
 	MX_TIM3_Init();
 	MX_USART1_UART_Init();

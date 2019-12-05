@@ -1,0 +1,2 @@
+control.c:16:6:UpdateWaveform	12	static
+control.c:161:7:fast_sin	24	static

@@ -26,9 +26,11 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
-/* USER CODE BEGIN Includes */
+// Desired frequency of the timers in KHz
+#define DESIRED_TIM_FREQ_KHZ		50U
 
-/* USER CODE END Includes */
+// Calculate period of the timer
+#define TIM_PERIOD					(uint16_t) (PROC_FREQ_KHZ / DESIRED_TIM_FREQ_KHZ)
 
 extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim3;

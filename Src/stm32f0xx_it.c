@@ -168,6 +168,27 @@ void USART1_IRQHandler(void)
   /* USER CODE END USART1_IRQn 1 */
 }
 
+// Interrupt handler
+void TIM3_IRQHandler(void)
+{
+
+	// Check for CC1 interrupt
+	if(__HAL_TIM_GET_FLAG(&htim3, TIM_FLAG_CC1) != RESET)
+	{
+		if(__HAL_TIM_GET_IT_SOURCE(&htim3, TIM_IT_CC1) !=RESET)
+		{
+			// Clear the interrupt
+		    __HAL_TIM_CLEAR_IT(&htim3, TIM_IT_CC1);
+		    htim3.Channel = HAL_TIM_ACTIVE_CHANNEL_1;
+
+		    UpdateWaveform(phase_U);
+
+			htim3.Channel = HAL_TIM_ACTIVE_CHANNEL_CLEARED;
+		}
+	}
+
+}
+
 /* USER CODE BEGIN 1 */
 
 /* USER CODE END 1 */
