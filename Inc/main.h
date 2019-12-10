@@ -29,64 +29,125 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f0xx_hal.h"
+#include "adc.h"
+#include "dma.h"
+#include "i2c.h"
+#include "tim.h"
+#include "usart.h"
+#include "gpio.h"
 
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
+// Enum for phases
+typedef enum
+{
+	phase_U = 0,
+	phase_V,
+	phase_W,
+}phase_t;
+// Enum describing switch state
+typedef enum
+{
+	switchOff = 0,
+	switchOn,
+	switchClosing,
+}switchState_t;
 
-/* USER CODE END Includes */
-
-/* Exported types ------------------------------------------------------------*/
-/* USER CODE BEGIN ET */
-
-/* USER CODE END ET */
-
-/* Exported constants --------------------------------------------------------*/
-/* USER CODE BEGIN EC */
-
-/* USER CODE END EC */
-
-/* Exported macro ------------------------------------------------------------*/
-/* USER CODE BEGIN EM */
-
-/* USER CODE END EM */
-
-/* Exported functions prototypes ---------------------------------------------*/
-void Error_Handler(void);
-
-/* USER CODE BEGIN EFP */
-
-/* USER CODE END EFP */
+// Enum describing the waveform state
+typedef enum
+{
+	waveform_stopped = 0,
+	waveform_running,
+	waveform_deadTime,
+}waveformState_t;
 
 /* Private defines -----------------------------------------------------------*/
-#define VOLTAGE_PHASE_U_Pin GPIO_PIN_0
-#define VOLTAGE_PHASE_U_GPIO_Port GPIOA
-#define VOLTAGE_PHASE_V_Pin GPIO_PIN_1
-#define VOLTAGE_PHASE_V_GPIO_Port GPIOA
-#define VOLTAGE_PHASE_W_Pin GPIO_PIN_2
-#define VOLTAGE_PHASE_W_GPIO_Port GPIOA
-#define CURRENT_PHASE_U_Pin GPIO_PIN_3
-#define CURRENT_PHASE_U_GPIO_Port GPIOA
-#define CURRENT_PHASE_V_Pin GPIO_PIN_4
-#define CURRENT_PHASE_V_GPIO_Port GPIOA
-#define CURRENT_PHASE_W_Pin GPIO_PIN_5
-#define CURRENT_PHASE_W_GPIO_Port GPIOA
-#define THROTTLE_Pin GPIO_PIN_6
-#define THROTTLE_GPIO_Port GPIOA
-#define HALL_PHASE_U_Pin GPIO_PIN_12
-#define HALL_PHASE_U_GPIO_Port GPIOB
-#define HALL_PHASE_V_Pin GPIO_PIN_13
-#define HALL_PHASE_V_GPIO_Port GPIOB
-#define HALL_PHASE_W_Pin GPIO_PIN_14
-#define HALL_PHASE_W_GPIO_Port GPIOB
-#define PWM_PHASE_U_Pin GPIO_PIN_8
-#define PWM_PHASE_U_GPIO_Port GPIOA
-#define PWM_PHASE_V_Pin GPIO_PIN_9
-#define PWM_PHASE_V_GPIO_Port GPIOA
-#define PWM_PHASE_W_Pin GPIO_PIN_10
-#define PWM_PHASE_W_GPIO_Port GPIOA
-/* USER CODE BEGIN Private defines */
+// If using the motor driver in single phase mode uncomment this
+#define SINGLE_PHASE_MODE
 
-/* USER CODE END Private defines */
+/* USER CODE BEGIN Private defines */
+// Frequency of the processor in KHz
+#define PROC_FREQ_KHZ					40000U
+
+// Desired frequency of the timers in KHz
+#define DESIRED_TIM_FREQ_KHZ		50U
+
+// Waveform defines
+#define WAVEFORM_FREQ_HZ				50U
+#define WAVEFORM_MAX_COUNT				(uint32_t) ((DESIRED_TIM_FREQ_KHZ * 1000) / WAVEFORM_FREQ_HZ)
+
+// Pre-calculated values of PI for Sine function
+#define PI 								(3.14159265)								// Value of Pi
+#define TWO_PI							(6.28318531)								// 2 * Pi
+#define PI_OVER_TWO						(1.57079632)								// Pi / 2
+#define FOUR_OVER_PI					(1.27323954)								// 4 / Pi
+#define FOUR_OVER_PI2					(.405284735)								// 4 / (Pi^2)
+
+// Sine calculation constants
+#define SINE_ACCURACY_CONSTANT			(.225)										// Constant used when increasing accuracy of sine
+
+// Amount of dead time in between waveform polarities in ticks of TIM3
+#define WAVEFORM_DEADTIME				1U
+
+#define NUM_ADC_CHANNEL					7U
+
+#define THROTTLE_MAX_VALUE				(uint16_t) 4095
+
+// Global waveform variables
+uint16_t waveform_frequency;
+uint32_t waveformU_switchCount;
+uint32_t waveformV_switchCount;
+uint32_t waveformW_switchCount;
+uint32_t waveform_maxSwitches;
+
+// Create a lookup table for sine values
+float sine_lookup[WAVEFORM_MAX_COUNT];
+
+// Switch state variables
+switchState_t phaseU_low_state;
+switchState_t phaseW_low_state;
+switchState_t phaseV_low_state;
+
+switchState_t phaseU_high_state;
+switchState_t phaseW_high_state;
+switchState_t phaseV_high_state;
+
+// Waveform state variables
+waveformState_t waveformU_state;
+waveformState_t waveformV_state;
+waveformState_t waveformW_state;
+
+// ADC buffer
+uint32_t adc_buffer[NUM_ADC_CHANNEL];
+
+// Throttle variables
+uint16_t throttleValue;
+
+// Max value of output waveform
+uint16_t waveformAmplitude;
+
+
+/**
+  * @brief Function to update a specific phase waveform
+  * @param phase to update
+  * @retval none
+  */
+void UpdateWaveform(phase_t phase);
+
+/**
+  * @brief Use the fast sin algorithm to calculate sin(x)
+  * @param x = input to sin(x)
+  * @retval floating point value of result
+  */
+float fast_sin(float x);
+
+/**
+  * @brief Creates a lookup table for the sine wave
+  * @param none
+  * @retval none
+  */
+void Create_SineTable(void);
+
+void Error_Handler(void);
+
 
 #ifdef __cplusplus
 }

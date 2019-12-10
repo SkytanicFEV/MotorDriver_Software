@@ -85,9 +85,12 @@ void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
 
+	int dummy;
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {
+	  dummy++;
+	  dummy--;
     /* USER CODE BEGIN W1_HardFault_IRQn 0 */
     /* USER CODE END W1_HardFault_IRQn 0 */
   }
@@ -166,6 +169,33 @@ void USART1_IRQHandler(void)
   /* USER CODE BEGIN USART1_IRQn 1 */
 
   /* USER CODE END USART1_IRQn 1 */
+}
+
+// Interrupt handler
+void TIM3_IRQHandler(void)
+{
+
+	// Check for CC1 interrupt
+	if(__HAL_TIM_GET_FLAG(&htim3, TIM_FLAG_CC1) != RESET)
+	{
+		if(__HAL_TIM_GET_IT_SOURCE(&htim3, TIM_IT_CC1) !=RESET)
+		{
+			// Clear the interrupt
+		    __HAL_TIM_CLEAR_IT(&htim3, TIM_IT_CC1);
+		    htim3.Channel = HAL_TIM_ACTIVE_CHANNEL_1;
+
+		    UpdateWaveform(phase_U);
+
+			htim3.Channel = HAL_TIM_ACTIVE_CHANNEL_CLEARED;
+		}
+	}
+
+}
+
+void ADC1_IRQHandler(void)
+{
+
+	HAL_ADC_IRQHandler(&hadc);
 }
 
 /* USER CODE BEGIN 1 */
