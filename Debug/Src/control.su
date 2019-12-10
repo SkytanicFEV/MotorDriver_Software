@@ -1,2 +1,3 @@
-control.c:16:6:UpdateWaveform	12	static
-control.c:161:7:fast_sin	24	static
+control.c:16:6:UpdateWaveform	16	static
+control.c:201:7:fast_sin	24	static
+control.c:242:6:Create_SineTable	16	static

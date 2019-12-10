@@ -174,13 +174,13 @@ void MX_TIM15_Init(void)
 		Error_Handler();
 	}
 	sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_ENABLE;
 	if (HAL_TIMEx_MasterConfigSynchronization(&htim15, &sMasterConfig) != HAL_OK)
 	{
 		Error_Handler();
 	}
 	sConfigOC.OCMode = TIM_OCMODE_TIMING;
-	sConfigOC.Pulse = 0;
+	sConfigOC.Pulse = 500;
 	sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
 	sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
 	sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
@@ -202,6 +202,14 @@ void MX_TIM15_Init(void)
 		Error_Handler();
 	}
 
+	// Enable clock tree
+	__HAL_RCC_TIM15_CLK_ENABLE();
+
+	// Start Waveform
+	if(HAL_TIM_OC_Start(&htim15, TIM_CHANNEL_1) != HAL_OK)
+	{
+		Error_Handler();
+	}
 }
 
 void HAL_TIM_PWM_MspInit(TIM_HandleTypeDef* tim_pwmHandle)

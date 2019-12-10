@@ -46,8 +46,8 @@ typedef enum
 // Enum describing switch state
 typedef enum
 {
-	switchOpen = 0,
-	switchClosed,
+	switchOff = 0,
+	switchOn,
 	switchClosing,
 }switchState_t;
 
@@ -67,6 +67,13 @@ typedef enum
 // Frequency of the processor in KHz
 #define PROC_FREQ_KHZ					40000U
 
+// Desired frequency of the timers in KHz
+#define DESIRED_TIM_FREQ_KHZ		50U
+
+// Waveform defines
+#define WAVEFORM_FREQ_HZ				50U
+#define WAVEFORM_MAX_COUNT				(uint32_t) ((DESIRED_TIM_FREQ_KHZ * 1000) / WAVEFORM_FREQ_HZ)
+
 // Pre-calculated values of PI for Sine function
 #define PI 								(3.14159265)								// Value of Pi
 #define TWO_PI							(6.28318531)								// 2 * Pi
@@ -78,7 +85,9 @@ typedef enum
 #define SINE_ACCURACY_CONSTANT			(.225)										// Constant used when increasing accuracy of sine
 
 // Amount of dead time in between waveform polarities in ticks of TIM3
-#define WAVEFORM_DEADTIME				5U
+#define WAVEFORM_DEADTIME				1U
+
+#define NUM_ADC_CHANNEL			7U
 
 // Global waveform variables
 uint16_t waveform_frequency;
@@ -86,6 +95,9 @@ uint32_t waveformU_switchCount;
 uint32_t waveformV_switchCount;
 uint32_t waveformW_switchCount;
 uint32_t waveform_maxSwitches;
+
+// Create a lookup table for sine values
+float sine_lookup[WAVEFORM_MAX_COUNT];
 
 // Switch state variables
 switchState_t phaseU_low_state;
@@ -101,6 +113,15 @@ waveformState_t waveformU_state;
 waveformState_t waveformV_state;
 waveformState_t waveformW_state;
 
+// ADC buffer
+uint32_t adc_buffer[NUM_ADC_CHANNEL];
+
+// Throttle variables
+uint16_t throttleValue;
+
+// Max value of output waveform
+uint16_t waveformAmplitude;
+
 
 /**
   * @brief Function to update a specific phase waveform
@@ -115,6 +136,13 @@ void UpdateWaveform(phase_t phase);
   * @retval floating point value of result
   */
 float fast_sin(float x);
+
+/**
+  * @brief Creates a lookup table for the sine wave
+  * @param none
+  * @retval none
+  */
+void Create_SineTable(void);
 
 void Error_Handler(void);
 

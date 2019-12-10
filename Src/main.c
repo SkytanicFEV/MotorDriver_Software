@@ -66,26 +66,33 @@ void SystemClock_Config(void);
 int main(void)
 {
 	// Initialize waveform variables to have a 60Hz waveform
-	waveform_frequency = 60;
-	waveform_maxSwitches = 844;
+	waveform_frequency = WAVEFORM_FREQ_HZ;
+	waveform_maxSwitches = WAVEFORM_MAX_COUNT;
 	waveformU_switchCount = 0;
 	waveformV_switchCount = 0;
 	waveformW_switchCount = 0;
 
-	// Initialize all of the FET states to open
-	phaseU_low_state = switchOpen;
-	phaseW_low_state = switchOpen;
-	phaseV_low_state = switchOpen;
 
-	phaseU_high_state = switchOpen;
-	phaseW_high_state = switchOpen;
-	phaseV_high_state = switchOpen;
+	// Initialize all of the FET states to open
+	phaseU_low_state = switchOff;
+	phaseW_low_state = switchOff;
+	phaseV_low_state = switchOff;
+
+	phaseU_high_state = switchOff;
+	phaseW_high_state = switchOff;
+	phaseV_high_state = switchOff;
 
 	// FIXME Change this to start out with the waveforms disabled
 	// Initialize the waveform states
 	waveformU_state = waveform_running;
 	waveformV_state = waveform_running;
 	waveformW_state = waveform_running;
+
+	// Initialize the waveform amplitude
+	waveformAmplitude = TIM_PERIOD / 2;
+
+	// Fill the sine lookup table with values
+	Create_SineTable();
 
 	/* MCU Configuration--------------------------------------------------------*/
 
@@ -104,6 +111,17 @@ int main(void)
 	MX_TIM3_Init();
 	MX_USART1_UART_Init();
 	MX_TIM15_Init();
+
+	// Start DMA transfer
+	if(HAL_ADC_Start_DMA(&hadc, adc_buffer, NUM_ADC_CHANNEL) != HAL_OK)
+	{
+		Error_Handler();
+	}
+
+//	if(HAL_ADC_Start_IT(&hadc) != HAL_OK)
+//	{
+//		Error_Handler();
+//	}
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */

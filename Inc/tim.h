@@ -26,8 +26,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
-// Desired frequency of the timers in KHz
-#define DESIRED_TIM_FREQ_KHZ		50U
+
 
 // Calculate period of the timer
 #define TIM_PERIOD					(uint16_t) (PROC_FREQ_KHZ / DESIRED_TIM_FREQ_KHZ)
