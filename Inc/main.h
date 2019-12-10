@@ -87,7 +87,9 @@ typedef enum
 // Amount of dead time in between waveform polarities in ticks of TIM3
 #define WAVEFORM_DEADTIME				1U
 
-#define NUM_ADC_CHANNEL			7U
+#define NUM_ADC_CHANNEL					7U
+
+#define THROTTLE_MAX_VALUE				(uint16_t) 4095
 
 // Global waveform variables
 uint16_t waveform_frequency;

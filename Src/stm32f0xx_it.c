@@ -85,9 +85,12 @@ void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
 
+	int dummy;
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {
+	  dummy++;
+	  dummy--;
     /* USER CODE BEGIN W1_HardFault_IRQn 0 */
     /* USER CODE END W1_HardFault_IRQn 0 */
   }
@@ -191,6 +194,7 @@ void TIM3_IRQHandler(void)
 
 void ADC1_IRQHandler(void)
 {
+
 	HAL_ADC_IRQHandler(&hadc);
 }
 

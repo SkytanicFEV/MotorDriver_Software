@@ -113,15 +113,15 @@ int main(void)
 	MX_TIM15_Init();
 
 	// Start DMA transfer
-	if(HAL_ADC_Start_DMA(&hadc, adc_buffer, NUM_ADC_CHANNEL) != HAL_OK)
-	{
-		Error_Handler();
-	}
-
-//	if(HAL_ADC_Start_IT(&hadc) != HAL_OK)
+//	if(HAL_ADC_Start_DMA(&hadc, adc_buffer, NUM_ADC_CHANNEL) != HAL_OK)
 //	{
 //		Error_Handler();
 //	}
+
+	if(HAL_ADC_Start_IT(&hadc) != HAL_OK)
+	{
+		Error_Handler();
+	}
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
@@ -179,6 +179,12 @@ void SystemClock_Config(void)
 	}
 }
 
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
+{
+	// Get the current ADC conversion
+	throttleValue = (ADC1->DR / 2) + (throttleValue / 2);
+	waveformAmplitude = TIM_PERIOD * throttleValue / (2 *THROTTLE_MAX_VALUE);
+}
 /**
   * @brief  This function is executed in case of error occurrence.
   * @retval None

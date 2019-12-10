@@ -70,6 +70,11 @@ void MX_TIM1_Init(void)
 	{
 		Error_Handler();
 	}
+	if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
+	{
+		Error_Handler();
+	}
+
 
 	HAL_TIM_MspPostInit(&htim1);
 
@@ -89,7 +94,10 @@ void MX_TIM1_Init(void)
 	{
 		Error_Handler();
 	}
-
+	if(HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4) != HAL_OK)
+	{
+		Error_Handler();
+	}
 
 
 }
