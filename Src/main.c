@@ -22,42 +22,9 @@
 #include "main.h"
 
 
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
-
-/* USER CODE END Includes */
-
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
-
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
-/* Private variables ---------------------------------------------------------*/
-
-/* USER CODE BEGIN PV */
-
-/* USER CODE END PV */
-
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-/* USER CODE BEGIN PFP */
 
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
 
 /**
   * @brief  The application entry point.
@@ -67,29 +34,25 @@ int main(void)
 {
 	// Initialize waveform variables to have a 60Hz waveform
 	waveform_frequency = WAVEFORM_FREQ_HZ;
-	waveform_maxSwitches = WAVEFORM_MAX_COUNT;
+	waveform_maxSwitches = WAVEFORM_MAX_COUNT / 6;
 	waveformU_switchCount = 0;
 	waveformV_switchCount = 0;
 	waveformW_switchCount = 0;
 
+	// Initialize phases to off state
+	phaseU_State = phaseOff;
+	phaseV_State = phaseOff;
+	phaseW_State = phaseOff;
 
-	// Initialize all of the FET states to open
-	phaseU_low_state = switchOff;
-	phaseW_low_state = switchOff;
-	phaseV_low_state = switchOff;
-
-	phaseU_high_state = switchOff;
-	phaseW_high_state = switchOff;
-	phaseV_high_state = switchOff;
-
-	// FIXME Change this to start out with the waveforms disabled
-	// Initialize the waveform states
-	waveformU_state = waveform_running;
-	waveformV_state = waveform_running;
-	waveformW_state = waveform_running;
+	// Start with the output off
+	outputState = outputOff;
 
 	// Initialize the waveform amplitude
-	waveformAmplitude = TIM_PERIOD / 2;
+	waveformAmplitude = 0;
+
+#ifndef HALL_EFFECT_ACTIVE
+	waveformPhase = waveform_Phase1;
+#endif
 
 	// Fill the sine lookup table with values
 	Create_SineTable();
@@ -106,10 +69,10 @@ int main(void)
 	MX_GPIO_Init();
 	MX_DMA_Init();
 	MX_ADC_Init();
-	MX_I2C1_Init();
+//	MX_I2C1_Init();
 	MX_TIM1_Init();
-	MX_TIM3_Init();
-	MX_USART1_UART_Init();
+//	MX_TIM3_Init();
+//	MX_USART1_UART_Init();
 	MX_TIM15_Init();
 
 	// Start DMA transfer
@@ -118,10 +81,14 @@ int main(void)
 //		Error_Handler();
 //	}
 
+	// Start ADC interrupts
 	if(HAL_ADC_Start_IT(&hadc) != HAL_OK)
 	{
 		Error_Handler();
 	}
+
+	// Start the waveforms
+//	StartWaveforms();
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
@@ -183,8 +150,118 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
 	// Get the current ADC conversion
 	throttleValue = (ADC1->DR / 2) + (throttleValue / 2);
-	waveformAmplitude = TIM_PERIOD * throttleValue / (2 *THROTTLE_MAX_VALUE);
+	waveformAmplitude = MAX_PULSE_WIDTH * throttleValue / (THROTTLE_MAX_VALUE);
 }
+
+void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
+{
+	if(htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1)
+	{
+		if(phaseU_State == phaseHigh)
+		{
+	    	TIM1->CCR1 = (uint16_t) waveformAmplitude;
+	    	HAL_GPIO_WritePin(PWM_PHASE_U_LOW_GPIO_Port, PWM_PHASE_U_LOW_Pin, SET);
+		}
+
+	}
+	if(htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2)
+	{
+		if(phaseV_State == phaseHigh)
+		{
+	    	TIM1->CCR2 = (uint16_t) waveformAmplitude;
+	    	HAL_GPIO_WritePin(PWM_PHASE_V_LOW_GPIO_Port, PWM_PHASE_V_LOW_Pin, SET);
+		}
+
+	}
+	if(htim->Channel == HAL_TIM_ACTIVE_CHANNEL_3)
+	{
+		if(phaseW_State == phaseHigh)
+		{
+	    	TIM1->CCR3 = (uint16_t) waveformAmplitude;
+	    	HAL_GPIO_WritePin(PWM_PHASE_W_LOW_GPIO_Port, PWM_PHASE_W_LOW_Pin, SET);
+		}
+
+	}
+	if(htim->Channel == HAL_TIM_ACTIVE_CHANNEL_4)
+	{
+		if(phaseU_State == phaseHigh)
+		{
+	    	HAL_GPIO_WritePin(PWM_PHASE_U_LOW_GPIO_Port, PWM_PHASE_U_LOW_Pin, RESET);
+		}
+		if(phaseV_State == phaseHigh)
+		{
+	    	HAL_GPIO_WritePin(PWM_PHASE_V_LOW_GPIO_Port, PWM_PHASE_V_LOW_Pin, RESET);
+		}
+		if(phaseW_State == phaseHigh)
+		{
+	    	HAL_GPIO_WritePin(PWM_PHASE_W_LOW_GPIO_Port, PWM_PHASE_W_LOW_Pin, RESET);
+		}
+
+		// Increase switch count
+		waveformU_switchCount++;
+		// Check to see if phase should be switched
+		if(waveformU_switchCount >= waveform_maxSwitches)
+		{
+			waveformU_switchCount = 0;
+			if(waveformPhase != waveform_Phase6){
+				waveformPhase++;
+			}
+			else
+			{
+				waveformPhase = waveform_Phase1;
+			}
+			UpdateWaveforms();
+
+		}
+
+	}
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	FindWaveformPhase();
+	// Update the waveforms based on the state of the Hall effect pins
+	// Check to see with pin interrupted
+//	switch(GPIO_Pin)
+//	{
+//	case HALL_PHASE_U_Pin:
+//		// Check to see if rising edge or falling edge
+//		if(GPIOB->IDR & HALL_PHASE_U_Pin)
+//		{
+//			waveformPhase = waveform_Phase4;
+//		}
+//		else
+//		{
+//			waveformPhase = waveform_Phase1;
+//		}
+//		break;
+//	case HALL_PHASE_V_Pin:
+//		if(GPIOB->IDR & HALL_PHASE_V_Pin)
+//		{
+//			waveformPhase = waveform_Phase2;
+//		}
+//		else
+//		{
+//			waveformPhase = waveform_Phase5;
+//		}
+//		break;
+//	case HALL_PHASE_W_Pin:
+//		if(GPIOB->IDR & HALL_PHASE_W_Pin)
+//		{
+//			waveformPhase = waveform_Phase6;
+//		}
+//		else
+//		{
+//			waveformPhase = waveform_Phase3;
+//		}
+//		break;
+//	default:
+//		return;
+//	}
+	// Update the waveforms after determining the phase
+	UpdateWaveforms();
+}
+
 /**
   * @brief  This function is executed in case of error occurrence.
   * @retval None

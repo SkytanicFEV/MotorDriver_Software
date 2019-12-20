@@ -7,189 +7,256 @@
 
 #include "main.h"
 
-
 /**
-  * @brief Function to update a specific phase waveform
-  * @param phase to update
+  * @brief Function to find the waveform phase based on the hall effect values
+  * @param none
   * @retval none
   */
-void UpdateWaveform(phase_t phase)
+void FindWaveformPhase(void)
 {
-	switch(phase)
+	if(GPIOB->IDR & HALL_PHASE_U_Pin)
 	{
-	case phase_U:
-	    // Check to see if waveform U is running
-	    if(waveformU_state == waveform_running)
-	    {
-	        // Increment the waveform count
-	        waveformU_switchCount++;
-	        // Check to see if there have been enough counts to switch output polarity
-	        if(waveformU_switchCount >= waveform_maxSwitches)
-	        {
-	        	// If the low side is open, indicate that it should be closing and open the high side
-	        	if(phaseU_low_state == switchOff)
-	        	{
-	        		// Update low side state
-	        		phaseU_low_state = switchClosing;
+		if(GPIOB->IDR & HALL_PHASE_V_Pin)
+		{
+			waveformPhase = waveform_Phase4;
+		}
+		else if(GPIOB->IDR & HALL_PHASE_W_Pin)
+		{
+			waveformPhase = waveform_Phase6;
 
-	        		// Update high side state
-	        		phaseU_high_state = switchOff;
-	        		// Update high side duty cycle
-	        		TIM1->CCR1 = 0;
+		}
+		else
+		{
+			waveformPhase = waveform_Phase5;
+		}
+	}
+	else
+	{
+		if(GPIOB->IDR & HALL_PHASE_V_Pin)
+		{
+			if(GPIOB->IDR & HALL_PHASE_W_Pin)
+			{
+				waveformPhase = waveform_Phase2;
 
-	        		// TODO Determine if updating Phase V should be done in it's own section
-	        		// Update low side state
-	        		phaseV_low_state = switchOff;
-	        		// Update low side duty cycle
-	        		TIM3->CCR2 = 0;
+			}
+			else
+			{
+				waveformPhase = waveform_Phase3;
 
-	        		// Update high side state
-	        		phaseV_high_state = switchClosing;
+			}
+		}
+		else
+		{
+			if(GPIOB->IDR & HALL_PHASE_W_Pin)
+			{
+				waveformPhase = waveform_Phase1;
+			}
+			// If none of the hall effect outputs are active then there is a problem
+			else
+			{
+				waveformPhase = waveform_NoWaveform;
+			}
 
-	        	}
-	        	// else turn it off, and update the states of low and high side
-	        	else if(phaseU_low_state == switchOn)
-	        	{
-	        		// Update low side state
-	        		phaseU_low_state = switchOff;
-	        		// Update low side duty cycle
-	        		TIM3->CCR1 = 0;
+		}
+	}
+}
 
-	        		// Update high side state
-	        		phaseU_high_state = switchClosing;
+/**
+  * @brief Function to start the waveforms and turn on the output
+  * @param none
+  * @retval none
+  */
+void StartWaveforms(void)
+{
+	// Look at the hall effects to determine the phase
+	FindWaveformPhase();
+	// If the waveform phase is valid, then turn on output
+//	if(waveformPhase != waveform_NoWaveform)
+//	{
+		// Update the waveforms based on hall effect values
+		UpdateWaveforms();
+		// Update output status
+		outputState = outputOn;
+//	}
 
-	        		// Update low side state
-	        		phaseV_low_state = switchClosing;
 
-	        		// Update high side state
-	        		phaseV_high_state = switchOff;
-	        		// Update high side duty cycle
-	        		TIM1->CCR2 = 0;
-	        	}
+}
 
-	        	// Reset the switch count
-	        	waveformU_switchCount = 0;
-	        	// Enter deadtime
-	        	waveformU_state = waveform_deadTime;
-	        }
-	        // Calculate the pwm using a lookup table
-	        if(phaseU_high_state == switchOn)
-	        {
-	        	float pwm_target = waveformAmplitude * sine_lookup[waveformU_switchCount];
-	        	TIM1->CCR1 = (uint16_t) pwm_target;
-	        }
-	        if(phaseV_high_state == switchOn)
-	        {
-	        	float pwm_target = waveformAmplitude * sine_lookup[waveformU_switchCount];
-	        	TIM1->CCR2 = (uint16_t) pwm_target;
-	        }
-	    }
-	    else if(waveformU_state == waveform_deadTime)
-	    {
-	        // Increment the waveform count
-	        waveformU_switchCount++;
-	        // Check to see if there have been enough counts to end the deadtime
-	        if(waveformU_switchCount >= WAVEFORM_DEADTIME)
-	        {
-	        	// If the low side is closing, then turn on the FET
-	        	if(phaseU_low_state == switchClosing)
-	        	{
-	        		TIM3->CCR1 = TIM_PERIOD;
-	        		phaseU_low_state = switchOn;
-	        	}
-	        	// If the high side is closing, then update the status
-	        	if(phaseU_high_state == switchClosing)
-	        	{
-//	        		TIM1->CCR1 = waveformAmplitude;
-	        		phaseU_high_state = switchOn;
-	        	}
+/**
+  * @brief Function to stop the waveforms and turn off the output
+  * @param none
+  * @retval none
+  */
+void StopWaveforms(void)
+{
+	// Turn off all high side
+	TIM1->CCR1 = 0;
+	TIM1->CCR2 = 0;
+	TIM1->CCR3 = 0;
 
-	        	// If the low side is closing, then turn on the FET
-	        	if(phaseV_low_state == switchClosing)
-	        	{
-	        		TIM3->CCR2 = TIM_PERIOD;
-	        		phaseV_low_state = switchOn;
-	        	}
-	        	// If the high side is closing, then update the status
-	        	if(phaseV_high_state == switchClosing)
-	        	{
-	        		phaseV_high_state = switchOn;
-	        	}
-	        	// Reset switch count
-	        	waveformU_switchCount = 0;
-	        	// Update waveform state
-	        	waveformU_state = waveform_running;
-	        }
-	    }
+	// Turn on all low side
+	HAL_GPIO_WritePin(PWM_PHASE_U_LOW_GPIO_Port, PWM_PHASE_U_LOW_Pin, RESET);
+	HAL_GPIO_WritePin(PWM_PHASE_V_LOW_GPIO_Port, PWM_PHASE_V_LOW_Pin, RESET);
+	HAL_GPIO_WritePin(PWM_PHASE_W_LOW_GPIO_Port, PWM_PHASE_W_LOW_Pin, RESET);
+
+	// Update phase states
+	phaseU_State = phaseLow;
+	phaseV_State = phaseLow;
+	phaseW_State = phaseLow;
+
+	// Update output status
+	outputState = outputOff;
+
+}
+
+/**
+  * @brief Function to update the three waveforms
+  * @param none
+  * @retval none
+  */
+void UpdateWaveforms(void)
+{
+	switch(waveformPhase)
+	{
+	case waveform_Phase1:
+		// Turn on phase U high side
+		TIM1->CCR1 = waveformAmplitude;
+		// Turn off phase U low side (will get turned back on in interrupts)
+    	HAL_GPIO_WritePin(PWM_PHASE_U_LOW_GPIO_Port, PWM_PHASE_U_LOW_Pin, RESET);
+    	// Update phase state
+    	phaseU_State = phaseHigh;
+
+    	// Turn off phase V high side
+    	TIM1->CCR2 = 0;
+    	// Turn on phase V low side
+    	HAL_GPIO_WritePin(PWM_PHASE_V_LOW_GPIO_Port, PWM_PHASE_V_LOW_Pin, SET);
+    	// Update phase state
+    	phaseV_State = phaseLow;
+
+    	// Turn off phase W high side
+    	TIM1->CCR3 = 0;
+    	// Turn off phase W low side
+    	HAL_GPIO_WritePin(PWM_PHASE_W_LOW_GPIO_Port, PWM_PHASE_W_LOW_Pin, RESET);
+    	// Update phase state
+    	phaseW_State = phaseOff;
 		return;
-	case phase_V:
-	    // Check to see if waveform is running
-	    if(waveformV_state == waveform_running)
-	    {
-	        // Increment the waveform count
-	        waveformV_switchCount++;
-	        // Check to see if there have been enough counts to switch output polarity
-	        if(waveformV_switchCount >= waveform_maxSwitches)
-	        {
-	        	// If the low side is open, indicate that it should be closing and open the high side
-	        	if(phaseV_low_state == switchOff)
-	        	{
-	        		// Update low side state
-	        		phaseV_low_state = switchClosing;
+	case waveform_Phase2:
+		// Turn off phase U high side
+		TIM1->CCR1 = 0;
+		// Turn off phase U low side
+    	HAL_GPIO_WritePin(PWM_PHASE_U_LOW_GPIO_Port, PWM_PHASE_U_LOW_Pin, RESET);
+    	// Update phase state
+    	phaseU_State = phaseOff;
 
-	        		// Update high side state
-	        		phaseV_high_state = switchOff;
-	        		// Update high side duty cycle
-	        		TIM1->CCR2 = 0;
-	        	}
-	        	// else turn it off, and update the states of low and high side
-	        	else if(phaseV_low_state == switchOn)
-	        	{
-	        		// Update low side state
-	        		phaseV_low_state = switchOff;
-	        		// Update low side duty cycle
-	        		TIM3->CCR2 = 0;
+    	// Turn off phase V high side
+    	TIM1->CCR2 = 0;
+    	// Turn on phase V low side
+    	HAL_GPIO_WritePin(PWM_PHASE_V_LOW_GPIO_Port, PWM_PHASE_V_LOW_Pin, SET);
+    	// Update phase state
+    	phaseV_State = phaseLow;
 
-	        		// Update high side state
-	        		phaseV_high_state = switchClosing;
-	        	}
-
-	        	// Reset the switch count
-	        	waveformV_switchCount = 0;
-	        	// Enter deadtime
-	        	waveformV_state = waveform_deadTime;
-	        }
-	    }
-	    else if(waveformV_state == waveform_deadTime)
-	    {
-	        // Increment the waveform count
-	        waveformV_switchCount++;
-	        // Check to see if there have been enough counts to end the deadtime
-	        if(waveformV_switchCount >= WAVEFORM_DEADTIME)
-	        {
-	        	// If the low side is closing, then turn on the FET
-	        	if(phaseV_low_state == switchClosing)
-	        	{
-	        		TIM3->CCR2 = TIM_PERIOD;
-	        		phaseV_low_state = switchOn;
-	        	}
-	        	// If the high side is closing, then update the status
-	        	if(phaseV_high_state == switchClosing)
-	        	{
-	        		phaseV_high_state = switchOn;
-	        	}
-	        	// Reset switch count
-	        	waveformV_switchCount = 0;
-	        	// Update waveform state
-	        	waveformV_state = waveform_running;
-	        }
-	    }
+    	// Turn on phase W high side
+    	TIM1->CCR3 = waveformAmplitude;
+    	// Turn off phase W low side (will get turned back on in interrupts)
+    	HAL_GPIO_WritePin(PWM_PHASE_W_LOW_GPIO_Port, PWM_PHASE_W_LOW_Pin, RESET);
+    	// Update phase state
+    	phaseW_State = phaseHigh;
 		return;
-	case phase_W:
+	case waveform_Phase3:
+		// Turn off phase U high side
+		TIM1->CCR1 = 0;
+		// Turn on phase U low side
+    	HAL_GPIO_WritePin(PWM_PHASE_U_LOW_GPIO_Port, PWM_PHASE_U_LOW_Pin, SET);
+    	// Update phase state
+    	phaseU_State = phaseLow;
+
+    	// Turn off phase V high side
+    	TIM1->CCR2 = 0;
+    	// Turn off phase V low side
+    	HAL_GPIO_WritePin(PWM_PHASE_V_LOW_GPIO_Port, PWM_PHASE_V_LOW_Pin, RESET);
+    	// Update phase state
+    	phaseV_State = phaseOff;
+
+    	// Turn on phase W high side
+    	TIM1->CCR3 = waveformAmplitude;
+    	// Turn off phase W low side (will get turned back on in interrupts)
+    	HAL_GPIO_WritePin(PWM_PHASE_W_LOW_GPIO_Port, PWM_PHASE_W_LOW_Pin, RESET);
+    	// Update phase state
+    	phaseW_State = phaseHigh;
+		return;
+	case waveform_Phase4:
+		// Turn off phase U high side
+		TIM1->CCR1 = 0;
+		// Turn on phase U low side
+    	HAL_GPIO_WritePin(PWM_PHASE_U_LOW_GPIO_Port, PWM_PHASE_U_LOW_Pin, SET);
+    	// Update phase state
+    	phaseU_State = phaseLow;
+
+    	// Turn on phase V high side
+    	TIM1->CCR2 = waveformAmplitude;
+    	// Turn on phase V low side (will get turned back on in interrupts)
+    	HAL_GPIO_WritePin(PWM_PHASE_V_LOW_GPIO_Port, PWM_PHASE_V_LOW_Pin, RESET);
+    	// Update phase state
+    	phaseV_State = phaseHigh;
+
+    	// Turn off phase W high side
+    	TIM1->CCR3 = 0;
+    	// Turn off phase W low side
+    	HAL_GPIO_WritePin(PWM_PHASE_W_LOW_GPIO_Port, PWM_PHASE_W_LOW_Pin, RESET);
+    	// Update phase state
+    	phaseW_State = phaseOff;
+		return;
+	case waveform_Phase5:
+		// Turn off phase U high side
+		TIM1->CCR1 = 0;
+		// Turn off phase U low side
+    	HAL_GPIO_WritePin(PWM_PHASE_U_LOW_GPIO_Port, PWM_PHASE_U_LOW_Pin, RESET);
+    	// Update phase state
+    	phaseU_State = phaseOff;
+
+    	// Turn on phase V high side
+    	TIM1->CCR2 = waveformAmplitude;
+    	// Turn on phase V low side (will get turned back on in interrupts)
+    	HAL_GPIO_WritePin(PWM_PHASE_V_LOW_GPIO_Port, PWM_PHASE_V_LOW_Pin, RESET);
+    	// Update phase state
+    	phaseV_State = phaseHigh;
+
+    	// Turn off phase W high side
+    	TIM1->CCR3 = 0;
+    	// Turn on phase W low side
+    	HAL_GPIO_WritePin(PWM_PHASE_W_LOW_GPIO_Port, PWM_PHASE_W_LOW_Pin, SET);
+    	// Update phase state
+    	phaseW_State = phaseLow;
+		return;
+	case waveform_Phase6:
+		// Turn on phase U high side
+		TIM1->CCR1 = waveformAmplitude;
+		// Turn off phase U low side  (will get turned back on in interrupts)
+    	HAL_GPIO_WritePin(PWM_PHASE_U_LOW_GPIO_Port, PWM_PHASE_U_LOW_Pin, RESET);
+    	// Update phase state
+    	phaseU_State = phaseHigh;
+
+    	// Turn off phase V high side
+    	TIM1->CCR2 = 0;
+    	// Turn on phase V low side
+    	HAL_GPIO_WritePin(PWM_PHASE_V_LOW_GPIO_Port, PWM_PHASE_V_LOW_Pin, RESET);
+    	// Update phase state
+    	phaseV_State = phaseOff;
+
+    	// Turn off phase W high side
+    	TIM1->CCR3 = 0;
+    	// Turn on phase W low side
+    	HAL_GPIO_WritePin(PWM_PHASE_W_LOW_GPIO_Port, PWM_PHASE_W_LOW_Pin, SET);
+    	// Update phase state
+    	phaseW_State = phaseLow;
 		return;
 	default:
+		// If none of the phases are detected then turn off the output
+		StopWaveforms();
+
 		return;
 	}
+
 }
 
 

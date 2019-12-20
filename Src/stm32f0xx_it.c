@@ -171,6 +171,16 @@ void USART1_IRQHandler(void)
   /* USER CODE END USART1_IRQn 1 */
 }
 
+void TIM1_CC_IRQHandler(void)
+{
+	HAL_TIM_IRQHandler(&htim1);
+}
+
+void TIM1_BRK_UP_TRG_COM_IRQHandler(void)
+{
+	HAL_TIM_IRQHandler(&htim1);
+}
+
 // Interrupt handler
 void TIM3_IRQHandler(void)
 {
@@ -184,7 +194,7 @@ void TIM3_IRQHandler(void)
 		    __HAL_TIM_CLEAR_IT(&htim3, TIM_IT_CC1);
 		    htim3.Channel = HAL_TIM_ACTIVE_CHANNEL_1;
 
-		    UpdateWaveform(phase_U);
+//		    UpdateWaveform(phase_U);
 
 			htim3.Channel = HAL_TIM_ACTIVE_CHANNEL_CLEARED;
 		}
@@ -198,7 +208,31 @@ void ADC1_IRQHandler(void)
 	HAL_ADC_IRQHandler(&hadc);
 }
 
-/* USER CODE BEGIN 1 */
+// External Interrupts Handler (Hall Effects)
+void EXTI4_15_IRQHandler(void)
+{
+	uint32_t pr = EXTI->PR;
+	EXTI->PR = pr;
 
-/* USER CODE END 1 */
+//	if(__HAL_GPIO_EXTI_GET_IT(HALL_PHASE_U_Pin) != RESET)
+//	{
+//		__HAL_GPIO_EXTI_CLEAR_IT(HALL_PHASE_U_Pin);
+//	}
+//	if(__HAL_GPIO_EXTI_GET_IT(HALL_PHASE_V_Pin) != RESET)
+//	{
+//		__HAL_GPIO_EXTI_CLEAR_IT(HALL_PHASE_V_Pin);
+//	}
+//	if(__HAL_GPIO_EXTI_GET_IT(HALL_PHASE_V_Pin) != RESET)
+//	{
+//		__HAL_GPIO_EXTI_CLEAR_IT(HALL_PHASE_V_Pin);
+//	}
+	FindWaveformPhase();
+	// Update the waveforms after determining the phase
+	UpdateWaveforms();
+//	HAL_GPIO_EXTI_IRQHandler(HALL_PHASE_U_Pin);
+//	HAL_GPIO_EXTI_IRQHandler(HALL_PHASE_V_Pin);
+//	HAL_GPIO_EXTI_IRQHandler(HALL_PHASE_W_Pin);
+
+}
+
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

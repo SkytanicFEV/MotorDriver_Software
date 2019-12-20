@@ -33,6 +33,8 @@ void MX_TIM1_Init(void)
 {
 	TIM_MasterConfigTypeDef sMasterConfig = {0};
 	TIM_OC_InitTypeDef sConfigOC = {0};
+	TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = {0};
+
 
 	htim1.Instance = TIM1;
 	htim1.Init.Prescaler = 0;
@@ -40,13 +42,13 @@ void MX_TIM1_Init(void)
 	htim1.Init.Period = TIM_PERIOD;
 	htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
 	htim1.Init.RepetitionCounter = 0;
-	htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+	htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
 	if (HAL_TIM_PWM_Init(&htim1) != HAL_OK)
 	{
 		Error_Handler();
 	}
 	sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_ENABLE;
 	if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
 	{
 		Error_Handler();
@@ -70,11 +72,23 @@ void MX_TIM1_Init(void)
 	{
 		Error_Handler();
 	}
+	sConfigOC.Pulse = TIM_PERIOD - PWM_DEADTIME;
 	if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
 	{
 		Error_Handler();
 	}
 
+//	sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
+//	sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
+//	sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;
+//	sBreakDeadTimeConfig.DeadTime = PWM_DEADTIME;
+//	sBreakDeadTimeConfig.BreakState = TIM_BREAK_ENABLE;
+//	sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
+//	sBreakDeadTimeConfig.AutomaticOutput = TIM_AUTOMATICOUTPUT_DISABLE;
+//	if (HAL_TIMEx_ConfigBreakDeadTime(&htim1, &sBreakDeadTimeConfig) != HAL_OK)
+//	{
+//		Error_Handler();
+//	}
 
 	HAL_TIM_MspPostInit(&htim1);
 
@@ -82,24 +96,30 @@ void MX_TIM1_Init(void)
 	__HAL_RCC_TIM1_CLK_ENABLE();
 
 	// Start Waveforms
-	if(HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1) != HAL_OK)
+	if(HAL_TIM_PWM_Start_IT(&htim1, TIM_CHANNEL_1) != HAL_OK)
 	{
 		Error_Handler();
 	}
-	if(HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2) != HAL_OK)
+	if(HAL_TIM_PWM_Start_IT(&htim1, TIM_CHANNEL_2) != HAL_OK)
 	{
 		Error_Handler();
 	}
-	if(HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3) != HAL_OK)
+	if(HAL_TIM_PWM_Start_IT(&htim1, TIM_CHANNEL_3) != HAL_OK)
 	{
 		Error_Handler();
 	}
-	if(HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4) != HAL_OK)
+	if(HAL_TIM_PWM_Start_IT(&htim1, TIM_CHANNEL_4) != HAL_OK)
 	{
 		Error_Handler();
 	}
 
+	// Configure and enable TIM1 interrupt channel in NVIC
+	HAL_NVIC_SetPriority(TIM1_CC_IRQn, 0, 0);
+	HAL_NVIC_EnableIRQ(TIM1_CC_IRQn);
 
+//	// Configure and enable TIM1 interrupt channel in NVIC
+//	HAL_NVIC_SetPriority(TIM1_BRK_UP_TRG_COM_IRQn, 0, 0);
+//	HAL_NVIC_EnableIRQ(TIM1_BRK_UP_TRG_COM_IRQn);
 }
 
 /* TIM3 init function (Low Side */
@@ -159,9 +179,9 @@ void MX_TIM3_Init(void)
 		Error_Handler();
 	}
 
-	// Configure and enable TIM3 interrupt channel in NVIC
-	HAL_NVIC_SetPriority(TIM3_IRQn, 0, 0);
-	HAL_NVIC_EnableIRQ(TIM3_IRQn);
+//	// Configure and enable TIM3 interrupt channel in NVIC
+//	HAL_NVIC_SetPriority(TIM3_IRQn, 0, 0);
+//	HAL_NVIC_EnableIRQ(TIM3_IRQn);
 }
 /* TIM15 init function */
 void MX_TIM15_Init(void)
