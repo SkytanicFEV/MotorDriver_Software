@@ -189,7 +189,6 @@ void TIM3_IRQHandler(void)
 			htim3.Channel = HAL_TIM_ACTIVE_CHANNEL_CLEARED;
 		}
 	}
-
 }
 
 void ADC1_IRQHandler(void)

@@ -136,8 +136,8 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)
     PA5     ------> ADC_IN5
     PA6     ------> ADC_IN6 
     */
-    GPIO_InitStruct.Pin = VOLTAGE_PHASE_U_Pin|VOLTAGE_PHASE_V_Pin|VOLTAGE_PHASE_W_Pin|CURRENT_PHASE_U_Pin 
-                          |CURRENT_PHASE_V_Pin|CURRENT_PHASE_W_Pin|THROTTLE_Pin;
+    GPIO_InitStruct.Pin = VOLTAGE_PHASE_U_PIN|VOLTAGE_PHASE_V_PIN|VOLTAGE_PHASE_W_PIN|CURRENT_PHASE_U_Pin 
+                          |CURRENT_PHASE_V_Pin|CURRENT_PHASE_W_Pin|THROTTLE_PIN;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
@@ -185,8 +185,8 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)
     PA5     ------> ADC_IN5
     PA6     ------> ADC_IN6 
     */
-    HAL_GPIO_DeInit(GPIOA, VOLTAGE_PHASE_U_Pin|VOLTAGE_PHASE_V_Pin|VOLTAGE_PHASE_W_Pin|CURRENT_PHASE_U_Pin 
-                          |CURRENT_PHASE_V_Pin|CURRENT_PHASE_W_Pin|THROTTLE_Pin);
+    HAL_GPIO_DeInit(GPIOA, VOLTAGE_PHASE_U_PIN|VOLTAGE_PHASE_V_PIN|VOLTAGE_PHASE_W_PIN|CURRENT_PHASE_U_Pin 
+                          |CURRENT_PHASE_V_Pin|CURRENT_PHASE_W_Pin|THROTTLE_PIN);
 
     /* ADC1 DMA DeInit */
     HAL_DMA_DeInit(adcHandle->DMA_Handle);
